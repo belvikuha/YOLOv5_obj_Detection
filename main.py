@@ -2,6 +2,8 @@ import torch
 import cv2
 import numpy as np
 import pika
+import json
+import base64
 import io
 
 from websocket import create_connection
@@ -23,22 +25,47 @@ def detect_objects(image_bytes):
     # Обнаружение объектов
     results = model(img)
 
+    keyWords = []
+    for i, (x, y, w, h, conf, cls) in enumerate(results.xywh[0]):
+        label = results.names[int(cls)]
+        keyWords.append(label)
+        print(f"Объект {i}: {label} (Уверенность: {conf:.2f}), Координаты: x={x:.0f}, y={y:.0f}, w={w:.0f}, h={h:.0f}")
+
+
     # Визуализация результатов
-    rendered_img = np.squeeze(results.render())
+    # rendered_img = np.squeeze(results.render())
 
     # Кодирование изображения в формат JPEG для отправки по веб-сокету
-    _, img_encoded = cv2.imencode('.jpg', rendered_img)
-    return img_encoded.tobytes()
+    # _, img_encoded = cv2.imencode('.jpg', rendered_img)
+    # return img_encoded.tobytes()
+    return ', '.join(keyWords)
 
 # Функция обработки сообщений из очереди
 def callback(ch, method, properties, body):
     print("Получено изображение из очереди")
+    # print(type(body))
+    # print(body)
+    # body_str = body.decode('utf-8')
+    # deserialized_object = json.loads(body.decode('utf-8'))
+    # print(deserialized_object)
+    # print(type(deserialized_object))
+    # image_bytes = bytes(deserialized_object['image'])
+    # image_bytes = base64.b64decode(deserialized_object['image'])
+    #
+    # conectionId = deserialized_object['conectionId']
+    # print(conectionId)
     processed_image = detect_objects(body)
-
     # Подключение к WebSocket и отправка обработанного изображения
     try:
-        ws = create_connection("ws://localhost:8099")
-        ws.send_binary(processed_image)
+        ws = create_connection("ws://localhost:8000")
+        # ws.send_binary(processed_image)
+        dataObject = {
+            "message": processed_image,
+            "method": "photokeywords receive",
+            "id": 1,
+        }
+
+        ws.send(json.dumps(dataObject))
         ws.close()
     except Exception as e:
         print("Ошибка WebSocket:", e)
@@ -48,10 +75,10 @@ connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 channel = connection.channel()
 
 # Создание очереди
-channel.queue_declare(queue='imagesQueue')
+channel.queue_declare(queue='imageKeyWord')
 
 # Установка обработчика сообщений
-channel.basic_consume(queue='imagesQueue', on_message_callback=callback, auto_ack=True)
+channel.basic_consume(queue='imageKeyWord', on_message_callback=callback, auto_ack=True)
 
 print('Ожидание изображений...')
 channel.start_consuming()
