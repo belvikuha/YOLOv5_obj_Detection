@@ -44,7 +44,7 @@ def detect_objects(image_bytes):
 def callback(ch, method, properties, body):
     print("Получено изображение из очереди")
     # print(type(body))
-    print(body)
+    # print(body)
     # body_str = body.decode('utf-8')
     deserialized_object = json.loads(body.decode('utf-8'))
     # print(deserialized_object)
