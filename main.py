@@ -44,17 +44,17 @@ def detect_objects(image_bytes):
 def callback(ch, method, properties, body):
     print("Получено изображение из очереди")
     # print(type(body))
-    # print(body)
+    print(body)
     # body_str = body.decode('utf-8')
-    # deserialized_object = json.loads(body.decode('utf-8'))
+    deserialized_object = json.loads(body.decode('utf-8'))
     # print(deserialized_object)
     # print(type(deserialized_object))
     # image_bytes = bytes(deserialized_object['image'])
-    # image_bytes = base64.b64decode(deserialized_object['image'])
+    image_bytes = base64.b64decode(deserialized_object['image'])
     #
-    # conectionId = deserialized_object['conectionId']
-    # print(conectionId)
-    processed_image = detect_objects(body)
+    conectionId = deserialized_object['conectionId']
+    print(conectionId)
+    processed_image = detect_objects(image_bytes)
     # Подключение к WebSocket и отправка обработанного изображения
     try:
         ws = create_connection("ws://localhost:8000")
@@ -62,7 +62,7 @@ def callback(ch, method, properties, body):
         dataObject = {
             "message": processed_image,
             "method": "photokeywords receive",
-            "id": 1,
+            "id": conectionId,
         }
 
         ws.send(json.dumps(dataObject))
