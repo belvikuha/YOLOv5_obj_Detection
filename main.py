@@ -31,6 +31,10 @@ def detect_objects(image_bytes):
         keyWords.append(label)
         print(f"Объект {i}: {label} (Уверенность: {conf:.2f}), Координаты: x={x:.0f}, y={y:.0f}, w={w:.0f}, h={h:.0f}")
 
+    # # Визуализация результатов
+    # cv2.imshow('YOLOv5 Detection', np.squeeze(results.render()))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
     # Визуализация результатов
     # rendered_img = np.squeeze(results.render())
